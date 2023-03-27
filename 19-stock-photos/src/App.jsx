@@ -1,33 +1,108 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useState, useEffect, useRef } from 'react'
+import { FaSearch } from 'react-icons/fa'
+import Photo from './Photo'
+const clientID = `?client_id=${import.meta.env.VITE_APP_ACCESS_KEY}`
+const mainUrl = `https://api.unsplash.com/photos/`
+const searchUrl = `https://api.unsplash.com/search/photos/`
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [photos, setPhotos] = useState([])
+  const [page, setPage] = useState(1)
+  const [query, setQuery] = useState('')
+  const mounted = useRef(false)
+  const [newImages, setNewImages] = useState(false)
+
+  const fetchImages = async () => {
+    setLoading(true)
+    let url
+    const urlPage = `&page=${page}`
+    const urlQuery = `&query=${query}`
+
+    if (query) {
+      url = `${searchUrl}${clientID}${urlPage}${urlQuery}`
+    } else {
+      url = `${mainUrl}${clientID}${urlPage}`
+    }
+    try {
+      const response = await fetch(url)
+      const data = await response.json()
+      setPhotos((oldPhotos) => {
+        if (query && page === 1) {
+          return data.results
+        } else if (query) {
+          return [...oldPhotos, ...data.results]
+        } else {
+          return [...oldPhotos, ...data]
+        }
+      })
+      setNewImages(false)
+      setLoading(false)
+    } catch (error) {
+      setNewImages(false)
+      setLoading(false)
+      console.log(error)
+    }
+  }
+
+  useEffect(() => {
+    fetchImages()
+  }, [page])
+
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true
+    }
+    if (!newImages) return
+    if (loading) return
+    setPage((oldPage) => oldPage + 1)
+  }, [newImages])
+
+  const event = () => {
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) {
+      setNewImages(true)
+    }
+  }
+  useEffect(() => {
+    window.addEventListener('scroll', event)
+    return () => window.removeEventListener('scroll', event)
+  }, [])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!query) return
+    if (page === 1) {
+      fetchImages()
+      return
+    }
+    setPage(1)
+  }
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
+    <main>
+      <section className="search">
+        <form className="search-form">
+          <input
+            type="text"
+            placeholder="search"
+            className="form-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button type="submit" className="submit-btn" onClick={handleSubmit}>
+            <FaSearch />
+          </button>
+        </form>
+      </section>
+      <section className="photos">
+        <div className="photos-center">
+          {photos.map((photo, index) => {
+            return <Photo key={index} {...photo} />
+          })}
+        </div>
+        {loading && <h2 className="loading">loading...</h2>}
+      </section>
+    </main>
   )
 }
 

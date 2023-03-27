@@ -1,33 +1,43 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useState, useEffect } from 'react'
+import data from './data'
+import Article from './Article'
+
+const getStorageTheme = () => {
+  let theme = 'light-theme'
+  if (localStorage.getItem('theme')) {
+    theme = localStorage.getItem('theme')
+  }
+  return theme
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [theme, setTheme] = useState(getStorageTheme())
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light-theme' ? 'dark-theme' : 'light-theme'
+    setTheme(newTheme)
+  }
+  useEffect(() => {
+    document.documentElement.className = theme
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
+    <main>
+      <nav>
+        <div className="nav-center">
+          <h1>overreacted</h1>
+          <button className="btn" onClick={toggleTheme}>
+            toggle
+          </button>
+        </div>
+      </nav>
+      <section className="articles">
+        {data.map((item) => {
+          return <Article key={item.id} {...item} />
+        })}
+      </section>
+    </main>
   )
 }
 
